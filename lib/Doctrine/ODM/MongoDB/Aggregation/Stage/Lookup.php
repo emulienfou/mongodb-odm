@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Doctrine\ODM\MongoDB\Aggregation\Stage;
 
 use Doctrine\ODM\MongoDB\Aggregation\Builder;
+use Doctrine\ODM\MongoDB\Aggregation\Expr;
 use Doctrine\ODM\MongoDB\Aggregation\Stage;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
@@ -37,6 +38,12 @@ class Lookup extends Stage
 
     /** @var string */
     private $as;
+
+    /** @var array */
+    private $let;
+
+    /** @var Expr|array */
+    private $pipeline;
 
     public function __construct(Builder $builder, string $from, DocumentManager $documentManager, ClassMetadata $class)
     {
@@ -101,14 +108,27 @@ class Lookup extends Stage
      */
     public function getExpression() : array
     {
-        return [
-            '$lookup' => [
-                'from' => $this->from,
-                'localField' => $this->localField,
-                'foreignField' => $this->foreignField,
-                'as' => $this->as,
-            ],
-        ];
+        if (isset($this->pipeline)) {
+            $pipeline = $this->pipeline instanceof Expr ? $this->pipeline->getExpression() : $this->pipeline;
+
+            return [
+                '$lookup' => [
+                    'from' => $this->from,
+                    'let' => $this->let,
+                    'pipeline' => $pipeline,
+                    'as' => $this->as,
+                ],
+            ];
+        } else {
+            return [
+                '$lookup' => [
+                    'from' => $this->from,
+                    'localField' => $this->localField,
+                    'foreignField' => $this->foreignField,
+                    'as' => $this->as,
+                ],
+            ];
+        }
     }
 
     /**
@@ -137,6 +157,39 @@ class Lookup extends Stage
     public function foreignField(string $foreignField) : self
     {
         $this->foreignField = $this->prepareFieldName($foreignField, $this->targetClass);
+
+        return $this;
+    }
+
+    /**
+     * Specifies variables to use in the pipeline field stages.
+     *
+     * Use the variable expressions to access the fields from the documents input to the $lookup stage.
+     * The pipeline cannot directly access the input document fields.
+     * Instead, first define the variables for the input document fields, and then reference the variables in the stages in the pipeline.
+     */
+    public function let(array $let): self
+    {
+        $this->let = $let;
+
+        return $this;
+    }
+
+    /**
+     * Specifies the pipeline to run on the joined collection.
+     *
+     * The pipeline determines the resulting documents from the joined collection. To return all documents, specify an empty pipeline [].
+     * The pipeline cannot include the $out stage or the $merge stage.
+     * The pipeline cannot directly access the input document fields.
+     * Instead, first define the variables for the input document fields, and then reference the variables in the stages in the pipeline.
+     */
+    public function pipeline($pipeline): self
+    {
+        if (!is_array($pipeline) && !$pipeline instanceof Expr) {
+            throw new \InvalidArgumentException(__METHOD__ . ' expects either an aggregation builder or an aggregation stage.');
+        }
+
+        $this->pipeline = $pipeline;
 
         return $this;
     }
