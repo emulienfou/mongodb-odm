@@ -12,6 +12,7 @@ use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\ODM\MongoDB\Persisters\DocumentPersister;
 use Doctrine\Persistence\Mapping\MappingException as BaseMappingException;
+use InvalidArgumentException;
 
 /**
  * Fluent interface for building aggregation pipelines.
@@ -114,21 +115,21 @@ class Lookup extends Stage
             return [
                 '$lookup' => [
                     'from' => $this->from,
-                    'let' => (object)$this->let,
+                    'let' => (object) $this->let,
                     'pipeline' => $pipeline,
                     'as' => $this->as,
                 ],
             ];
-        } else {
-            return [
-                '$lookup' => [
-                    'from' => $this->from,
-                    'localField' => $this->localField,
-                    'foreignField' => $this->foreignField,
-                    'as' => $this->as,
-                ],
-            ];
         }
+
+        return [
+            '$lookup' => [
+                'from' => $this->from,
+                'localField' => $this->localField,
+                'foreignField' => $this->foreignField,
+                'as' => $this->as,
+            ],
+        ];
     }
 
     /**
@@ -168,7 +169,7 @@ class Lookup extends Stage
      * The pipeline cannot directly access the input document fields.
      * Instead, first define the variables for the input document fields, and then reference the variables in the stages in the pipeline.
      */
-    public function let(array $let): self
+    public function let(array $let) : self
     {
         $this->let = $let;
 
@@ -183,10 +184,10 @@ class Lookup extends Stage
      * The pipeline cannot directly access the input document fields.
      * Instead, first define the variables for the input document fields, and then reference the variables in the stages in the pipeline.
      */
-    public function pipeline($pipeline): self
+    public function pipeline($pipeline) : self
     {
-        if (!is_array($pipeline) && !$pipeline instanceof Expr) {
-            throw new \InvalidArgumentException(__METHOD__ . ' expects either an aggregation builder or an aggregation stage.');
+        if (! is_array($pipeline) && ! $pipeline instanceof Expr) {
+            throw new InvalidArgumentException(__METHOD__ . ' expects either an aggregation builder or an aggregation stage.');
         }
 
         $this->pipeline = $pipeline;
