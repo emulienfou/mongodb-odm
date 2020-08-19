@@ -11,6 +11,7 @@ use Documents\ReferenceUser;
 use Documents\Sharded\ShardedOne;
 use Documents\SimpleReferenceUser;
 use Documents\User;
+use stdClass;
 
 class LookupTest extends BaseTest
 {
@@ -441,19 +442,30 @@ class LookupTest extends BaseTest
 
     public function testLookupPipelineStageAndDefaultAliasOverride()
     {
-        $builder = $this->dm->createAggregationBuilder(User::class);
+        $builder = $this->dm->createAggregationBuilder(SimpleReferenceUser::class);
         $builder
-            ->lookup('simpleReferenceOneInverse')
-                ->let([])
-                ->pipeline([])
+            ->lookup('user')
+                ->let(['user' => 'user'])
+                ->pipeline(
+                    [
+                        [
+                            '$match' => [
+                                '$expr' => ['$eq' => ['$user.username', 'alcaeus']],
+                            ],
+                        ],
+                    ]
+                )
                 ->alias('override');
+
+        $let       = new stdClass();
+        $let->user = 'user';
 
         $expectedPipeline = [
             [
                 '$lookup' => [
-                    'from' => 'SimpleReferenceUser',
-                    'let' => new \stdClass(),
-                    'pipeline' => [],
+                    'from' => 'users',
+                    'let' => $let,
+                    'pipeline' => [['$match' => ['$expr' => ['$eq' => ['$user.username', 'alcaeus']]]]],
                     'as' => 'override',
                 ],
             ],
@@ -461,7 +473,7 @@ class LookupTest extends BaseTest
 
         $this->assertEquals($expectedPipeline, $builder->getPipeline());
 
-        $result = $builder->execute()->toArray();
-        $this->assertCount(1, $result[0]['override']);
+        $result = $builder->getAggregation()->getIterator()->toArray();
+        $this->assertCount(2, $result);
     }
 }
