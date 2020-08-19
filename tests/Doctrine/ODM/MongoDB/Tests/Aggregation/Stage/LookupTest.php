@@ -438,4 +438,30 @@ class LookupTest extends BaseTest
         $result = $builder->execute()->toArray();
         $this->assertCount(1, $result[0]['override']);
     }
+
+    public function testLookupPipelineStageAndDefaultAliasOverride()
+    {
+        $builder = $this->dm->createAggregationBuilder(User::class);
+        $builder
+            ->lookup('simpleReferenceOneInverse')
+                ->let([])
+                ->pipeline([])
+                ->alias('override');
+
+        $expectedPipeline = [
+            [
+                '$lookup' => [
+                    'from' => 'SimpleReferenceUser',
+                    'let' => new \stdClass(),
+                    'pipeline' => [],
+                    'as' => 'override',
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expectedPipeline, $builder->getPipeline());
+
+        $result = $builder->execute()->toArray();
+        $this->assertCount(1, $result[0]['override']);
+    }
 }

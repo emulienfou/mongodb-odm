@@ -114,7 +114,7 @@ class Lookup extends Stage
             return [
                 '$lookup' => [
                     'from' => $this->from,
-                    'let' => $this->let,
+                    'let' => (object)$this->let,
                     'pipeline' => $pipeline,
                     'as' => $this->as,
                 ],
