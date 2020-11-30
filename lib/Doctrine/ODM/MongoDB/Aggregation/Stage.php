@@ -6,9 +6,7 @@ namespace Doctrine\ODM\MongoDB\Aggregation;
 
 use Doctrine\ODM\MongoDB\Iterator\Iterator;
 use GeoJson\Geometry\Point;
-use const E_USER_DEPRECATED;
-use function sprintf;
-use function trigger_error;
+use function trigger_deprecation;
 
 /**
  * Fluent interface for building aggregation pipelines.
@@ -37,9 +35,12 @@ abstract class Stage
      */
     public function execute(array $options = []) : Iterator
     {
-        @trigger_error(
-            sprintf('The "%s" method was deprecated in doctrine/mongodb-odm 2.2. Please use getAggregation() instead.', __METHOD__),
-            E_USER_DEPRECATED
+        trigger_deprecation(
+            'doctrine/mongodb-odm',
+            '2.2',
+            'Using "%s" is deprecated, use "%s::getAggregation()" instead.',
+            __METHOD__,
+            self::class
         );
 
         return $this->builder->execute($options);
@@ -110,7 +111,7 @@ abstract class Stage
      * $collStats must be the first stage in an aggregation pipeline, or else
      * the pipeline returns an error.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/geoNear/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/geoNear/
      */
     public function collStats() : Stage\CollStats
     {
@@ -144,7 +145,7 @@ abstract class Stage
      * Outputs documents in order of nearest to farthest from a specified point.
      * You can only use this as the first stage of a pipeline.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/geoNear/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/geoNear/
      *
      * @param float|array|Point $x
      * @param float             $y
@@ -166,7 +167,7 @@ abstract class Stage
      * Performs a recursive search on a collection, with options for restricting
      * the search by recursion depth and query filter.
      *
-     * @see https://docs.mongodb.org/manual/reference/operator/aggregation/graphLookup/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/graphLookup/
      *
      * @param string $from Target collection for the $graphLookup operation to
      * search, recursively matching the connectFromField to the connectToField.
@@ -180,7 +181,7 @@ abstract class Stage
      * Groups documents by some specified expression and outputs to the next
      * stage a document for each distinct grouping.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/group/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/group/
      */
     public function group() : Stage\Group
     {
@@ -190,7 +191,7 @@ abstract class Stage
     /**
      * Returns statistics regarding the use of each index for the collection.
      *
-     * @see https://docs.mongodb.org/manual/reference/operator/aggregation/indexStats/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/indexStats/
      */
     public function indexStats() : Stage\IndexStats
     {
@@ -200,7 +201,7 @@ abstract class Stage
     /**
      * Limits the number of documents passed to the next stage in the pipeline.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/limit/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/limit/
      *
      * @return Stage\Limit
      */
@@ -214,7 +215,7 @@ abstract class Stage
      * database to filter in documents from the “joined” collection for
      * processing.
      *
-     * @see https://docs.mongodb.org/manual/reference/operator/aggregation/lookup/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/
      */
     public function lookup(string $from) : Stage\Lookup
     {
@@ -225,7 +226,7 @@ abstract class Stage
      * Filters the documents to pass only the documents that match the specified
      * condition(s) to the next pipeline stage.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/match/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/match/
      */
     public function match() : Stage\Match
     {
@@ -236,7 +237,7 @@ abstract class Stage
      * Takes the documents returned by the aggregation pipeline and writes them
      * to a specified collection. This must be the last stage in the pipeline.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/out/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/out/
      */
     public function out(string $collection) : Stage\Out
     {
@@ -248,7 +249,7 @@ abstract class Stage
      * stage in the pipeline. The specified fields can be existing fields from
      * the input documents or newly computed fields.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/project/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/project/
      */
     public function project() : Stage\Project
     {
@@ -259,7 +260,7 @@ abstract class Stage
      * Restricts the contents of the documents based on information stored in
      * the documents themselves.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/redact/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/redact/
      */
     public function redact() : Stage\Redact
     {
@@ -295,7 +296,7 @@ abstract class Stage
     /**
      * Randomly selects the specified number of documents from its input.
      *
-     * @see https://docs.mongodb.org/manual/reference/operator/aggregation/sample/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/sample/
      */
     public function sample(int $size) : Stage\Sample
     {
@@ -306,7 +307,7 @@ abstract class Stage
      * Skips over the specified number of documents that pass into the stage and
      * passes the remaining documents to the next stage in the pipeline.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/skip/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/skip/
      */
     public function skip(int $skip) : Stage\Skip
     {
@@ -317,7 +318,7 @@ abstract class Stage
      * Groups incoming documents based on the value of a specified expression,
      * then computes the count of documents in each distinct group.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/sortByCount/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/sortByCount/
      */
     public function sortByCount(string $expression) : Stage\SortByCount
     {
@@ -330,7 +331,7 @@ abstract class Stage
      * If sorting by multiple fields, the first argument should be an array of
      * field name (key) and order (value) pairs.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/sort/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/sort/
      *
      * @param array|string $fieldName Field name or array of field/order pairs
      * @param int|string   $order     Field order (if one field is specified)
@@ -345,7 +346,7 @@ abstract class Stage
      * for each element. Each output document is the input document with the
      * value of the array field replaced by the element.
      *
-     * @see http://docs.mongodb.org/manual/reference/operator/aggregation/unwind/
+     * @see https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/
      */
     public function unwind(string $fieldName) : Stage\Unwind
     {

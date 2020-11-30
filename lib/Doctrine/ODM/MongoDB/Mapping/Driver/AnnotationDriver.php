@@ -9,21 +9,22 @@ use Doctrine\Common\Annotations\Reader;
 use Doctrine\ODM\MongoDB\Events;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Doctrine\ODM\MongoDB\Mapping\Annotations\AbstractIndex;
+use Doctrine\ODM\MongoDB\Mapping\Annotations\ShardKey;
 use Doctrine\ODM\MongoDB\Mapping\ClassMetadata;
 use Doctrine\ODM\MongoDB\Mapping\MappingException;
 use Doctrine\Persistence\Mapping\Driver\AnnotationDriver as AbstractAnnotationDriver;
 use ReflectionClass;
 use ReflectionMethod;
-use const E_USER_DEPRECATED;
 use function array_merge;
 use function array_replace;
 use function assert;
 use function class_exists;
 use function constant;
+use function count;
 use function get_class;
 use function interface_exists;
 use function is_array;
-use function trigger_error;
+use function trigger_deprecation;
 
 /**
  * The AnnotationDriver reads the mapping metadata from docblock annotations.
@@ -69,8 +70,12 @@ class AnnotationDriver extends AbstractAnnotationDriver
                 $this->addIndex($class, $annot);
             }
             if ($annot instanceof ODM\Indexes) {
-                // Setting the type to mixed is a workaround until https://github.com/doctrine/annotations/pull/209 is released.
-                /** @var mixed $value */
+                trigger_deprecation(
+                    'doctrine/mongodb-odm',
+                    '2.2',
+                    'The "@Indexes" annotation used in class "%s" is deprecated. Specify all "@Index" and "@UniqueIndex" annotations on the class.',
+                    $className
+                );
                 $value = $annot->value;
                 foreach (is_array($value) ? $value : [$value] as $index) {
                     $this->addIndex($class, $index);
@@ -141,7 +146,15 @@ class AnnotationDriver extends AbstractAnnotationDriver
         if (isset($documentAnnot->writeConcern)) {
             $class->setWriteConcern($documentAnnot->writeConcern);
         }
-        if (isset($documentAnnot->indexes)) {
+        if (isset($documentAnnot->indexes) && count($documentAnnot->indexes)) {
+            trigger_deprecation(
+                'doctrine/mongodb-odm',
+                '2.2',
+                'The "indexes" parameter in the "%s" annotation for class "%s" is deprecated. Specify all "@Index" and "@UniqueIndex" annotations on the class.',
+                $className,
+                get_class($documentAnnot)
+            );
+
             foreach ($documentAnnot->indexes as $index) {
                 $this->addIndex($class, $index);
             }
@@ -164,9 +177,6 @@ class AnnotationDriver extends AbstractAnnotationDriver
             foreach ($this->reader->getPropertyAnnotations($property) as $annot) {
                 if ($annot instanceof ODM\AbstractField) {
                     $fieldAnnot = $annot;
-                    if ($annot->isDeprecated()) {
-                        @trigger_error($annot->getDeprecationMessage(), E_USER_DEPRECATED);
-                    }
                 }
                 if ($annot instanceof ODM\AbstractIndex) {
                     $indexes[] = $annot;
@@ -204,8 +214,9 @@ class AnnotationDriver extends AbstractAnnotationDriver
         }
 
         // Set shard key after all fields to ensure we mapped all its keys
-        if (isset($classAnnotations['Doctrine\ODM\MongoDB\Mapping\Annotations\ShardKey'])) {
-            $this->setShardKey($class, $classAnnotations['Doctrine\ODM\MongoDB\Mapping\Annotations\ShardKey']);
+        if (isset($classAnnotations[ShardKey::class])) {
+            assert($classAnnotations[ShardKey::class] instanceof ShardKey);
+            $this->setShardKey($class, $classAnnotations[ShardKey::class]);
         }
 
         /** @var ReflectionMethod $method */
